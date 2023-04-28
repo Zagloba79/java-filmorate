@@ -6,7 +6,6 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -19,6 +18,7 @@ public class FilmController {
     public FilmController(InMemoryFilmStorage inMemoryFilmStorage) {
         this.inMemoryFilmStorage = inMemoryFilmStorage;
     }
+
     @GetMapping
     public List<Film> findAll() {
         return inMemoryFilmStorage.findAll();
