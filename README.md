@@ -1,2 +1,3 @@
 # java-filmorate
-Template repository for Filmorate project.
+
+[Диаграмма бызы данных](D:\Яндекс Практикум\java-filmorate\src\main\resources\users_friends_films.png)
