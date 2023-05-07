@@ -7,8 +7,6 @@ import lombok.ToString;
 import java.time.LocalDate;
 
 @Data
-@EqualsAndHashCode
-@ToString
 public class User {
     private int id;
     private String email;

@@ -3,8 +3,8 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 @Service
 public class FilmService {
     @Autowired
-    InMemoryFilmStorage inMemoryFilmStorage;
+    FilmStorage inMemoryFilmStorage;
     @Autowired
-    InMemoryUserStorage inMemoryUserStorage;
+    UserStorage inMemoryUserStorage;
     private final Map<Integer, Set<Integer>> everyFilmWithLikes = new HashMap<>();
 
     public void addLike(Integer id, Integer userId) {

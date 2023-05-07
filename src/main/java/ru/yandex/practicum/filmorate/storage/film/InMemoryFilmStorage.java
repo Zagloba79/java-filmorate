@@ -17,7 +17,7 @@ import java.util.Map;
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
     private final Map<Integer, Film> films = new HashMap<>();
-    private static int currentId = 0;
+    private int currentId = 0;
     private static final LocalDate FIRST_TIME = LocalDate.of(1895, 12, 28);
     private static final int MAX_DESCRIPTION = 200;
 
@@ -39,9 +39,10 @@ public class InMemoryFilmStorage implements FilmStorage {
             throw new ObjectAlreadyExistException("Фильм  " + film.getId() + " уже есть в базе");
         }
         validate(film);
-        int id = ++currentId;
-        film.setId(id);
-        films.put(id, film);
+//        int id = ++currentId;
+//        film.setId(id);
+        film.setId(++currentId);
+        films.put(currentId, film);
         log.info("Фильм  " + film.getId() + " добавлен в базу");
         return film;
     }

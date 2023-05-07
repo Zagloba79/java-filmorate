@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @Component
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Integer, User> users = new HashMap<>();
-    private static int currentId = 0;
+    private int currentId = 0;
 
     public List<User> findAll() {
         return new ArrayList<>(users.values());
@@ -40,9 +40,10 @@ public class InMemoryUserStorage implements UserStorage {
             throw new ObjectAlreadyExistException("Пользователь  " + user.getId() + " уже есть зарегистрирован.");
         }
         validate(user);
-        int id = ++currentId;
-        user.setId(id);
-        users.put(id, user);
+//        int id = ++currentId;
+//        user.setId(id);
+        user.setId(++currentId);
+        users.put(currentId, user);
         log.info("Вы только что зарегистрировали пользователя с именем " + user.getName()
                 + " и электронной почтой " + user.getEmail());
         return user;
