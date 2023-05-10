@@ -18,11 +18,15 @@ public class UserService {
         User user = inMemoryUserStorage.getUser(userId);
         User friend = inMemoryUserStorage.getUser(friendId);
         Set<Integer> userFriends = user.getFriends();
+        if (userFriends == null) {
+            userFriends = new HashSet<>();
+        }
         userFriends.add(friendId);
-        user.setFriends(userFriends);
         Set<Integer> friendFriends = friend.getFriends();
+        if (friendFriends == null) {
+            friendFriends = new HashSet<>();
+        }
         friendFriends.add(userId);
-        friend.setFriends(friendFriends);
     }
 
     public void argueFriends(Integer userId, Integer friendId) {
@@ -30,10 +34,8 @@ public class UserService {
         User friend = inMemoryUserStorage.getUser(friendId);
         Set<Integer> userFriends = user.getFriends();
         userFriends.remove(friendId);
-        user.setFriends(userFriends);
         Set<Integer> friendFriends = friend.getFriends();
         friendFriends.remove(userId);
-        friend.setFriends(friendFriends);
     }
 
     public List<User> showCommonFriends(int userId, int friendId) {
@@ -44,13 +46,13 @@ public class UserService {
         if (userFriends == null || friendFriends == null) {
             return Collections.EMPTY_LIST;
         }
-        Set<Integer> commonFriends = new HashSet<>();
+        Set<User> commonFriends = new HashSet<>();
         for (Integer thisUser : userFriends) {
             if (friendFriends.contains(thisUser)) {
-                commonFriends.add(thisUser);
+                commonFriends.add(inMemoryUserStorage.getUser(thisUser));
             }
         }
-        return inMemoryUserStorage.getUsers(commonFriends);
+        return new ArrayList<>(commonFriends);
     }
 
     public List<User> findAll() {
@@ -76,7 +78,6 @@ public class UserService {
             User friend = inMemoryUserStorage.getUser(friendId);
             Set<Integer> friendFriends = friend.getFriends();
             friendFriends.remove(userId);
-            friend.setFriends(friendFriends);
         }
         inMemoryUserStorage.delete(user);
     }

@@ -3,14 +3,16 @@ package ru.yandex.practicum.filmorate.storage.user;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.ObjectNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ObjectAlreadyExistException;
+import ru.yandex.practicum.filmorate.exception.ObjectNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -28,10 +30,6 @@ public class InMemoryUserStorage implements UserStorage {
             throw new ObjectNotFoundException("Пользователя с id=" + id + " не существует.");
         }
         return users.get(id);
-    }
-
-    public List<User> getUsers(Set<Integer> ids) {
-        return users.values().stream().filter(user -> ids.contains(user.getId())).collect(Collectors.toList());
     }
 
     public User create(User user) {
@@ -64,7 +62,6 @@ public class InMemoryUserStorage implements UserStorage {
             log.error("Такой пользователь не зарегистрирован");
             throw new ObjectNotFoundException("Такой пользователь не зарегистрирован");
         }
-        validate(user);
         users.remove(user.getId());
         log.info("Пользователь  " + user.getId() + " удалён");
     }

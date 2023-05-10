@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -31,9 +32,12 @@ public class FilmService {
 
     public void deleteLike(Integer filmId, Integer userId) {
         Film film = inMemoryFilmStorage.getFilm(filmId);
+        User user = inMemoryUserStorage.getUser(userId);
         Set<Integer> likes = film.getLikes();
         if (likes != null) {
-            likes.remove(userId);
+            if (inMemoryUserStorage.findAll().contains(user)) {
+                likes.remove(userId);
+            }
         }
     }
 

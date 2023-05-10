@@ -10,8 +10,6 @@ public interface UserStorage {
 
     User getUser(int id);
 
-    List<User> getUsers(Set<Integer> ids);
-
     User create(User user);
 
     User update(User user);
