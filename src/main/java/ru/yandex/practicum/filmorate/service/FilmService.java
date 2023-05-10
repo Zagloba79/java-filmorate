@@ -2,6 +2,8 @@ package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
@@ -15,56 +17,70 @@ public class FilmService {
     FilmStorage inMemoryFilmStorage;
     @Autowired
     UserStorage inMemoryUserStorage;
-    private final Map<Integer, Set<Integer>> everyFilmWithLikes = new HashMap<>();
 
-    public void addLike(Integer id, Integer userId) {
-        Set<Integer> thisFilmLikes = everyFilmWithLikes.get(id);
-        if (thisFilmLikes == null) {
-            thisFilmLikes = new HashSet<>();
+    public void addLike(Integer filmId, Integer userId) {
+        Film film = inMemoryFilmStorage.getFilm(filmId);
+        Set<Integer> likes = film.getLikes();
+        if (likes == null) {
+            likes = new HashSet<>();
         }
         if (inMemoryUserStorage.getUser(userId) != null) {
-            thisFilmLikes.add(userId);
-        }
-        everyFilmWithLikes.put(id, thisFilmLikes);
-    }
-
-    public void deleteLike(Integer id, Integer userId) {
-        Set<Integer> thisFilmLikes = everyFilmWithLikes.get(id);
-        if (inMemoryUserStorage.getUser(userId) != null) {
-            thisFilmLikes.remove(userId);
-        }
-        if (thisFilmLikes.size() == 0) {
-            everyFilmWithLikes.remove(id);
-        } else {
-            everyFilmWithLikes.put(id, thisFilmLikes);
+            likes.add(userId);
         }
     }
 
-    public Map<Integer, ArrayList<Film>> sortByLikes() {
-        Map<Integer, ArrayList<Film>> likesAndFilms = new HashMap<>();
-        for (Integer filmId : everyFilmWithLikes.keySet()) {
-            Integer likes = everyFilmWithLikes.get(filmId).size();
-            if (!likesAndFilms.containsKey(likes)) {
-                ArrayList<Film> newLikeList = new ArrayList<>();
-                newLikeList.add(inMemoryFilmStorage.getFilm(filmId));
-                likesAndFilms.put(likes, newLikeList);
+    public void deleteLike(Integer filmId, Integer userId) {
+        Film film = inMemoryFilmStorage.getFilm(filmId);
+        Set<Integer> likes = film.getLikes();
+        if (likes != null) {
+            likes.remove(userId);
+        }
+    }
+
+    public Map<Integer, ArrayList<Film>> likesAndFilms() {
+        Map<Integer, ArrayList<Film>> filmsByLikes = new HashMap<>();
+        for (Film film : inMemoryFilmStorage.findAll()) {
+            Integer countOfLikes = film.getLikes().size();
+            ArrayList<Film> thisLikes;
+            if (!filmsByLikes.containsKey(countOfLikes)) {
+                thisLikes = new ArrayList<>();
             } else {
-                ArrayList<Film> likeList = likesAndFilms.get(likes);
-                likeList.add(inMemoryFilmStorage.getFilm(filmId));
-                likesAndFilms.put(likes, likeList);
+                thisLikes = filmsByLikes.get(countOfLikes);
             }
+            thisLikes.add(film);
+            filmsByLikes.put(countOfLikes, thisLikes);
         }
-        return likesAndFilms;
+        return filmsByLikes;
     }
 
     public List<Film> showTopFilms(int limitOfTop) {
-        if (everyFilmWithLikes.isEmpty()) {
+        Map<Integer, ArrayList<Film>> filmsByLikes = likesAndFilms();
+        if (filmsByLikes.isEmpty()) {
             return inMemoryFilmStorage.findAll().stream().limit(limitOfTop).collect(Collectors.toList());
         } else {
-            Map<Integer, ArrayList<Film>> sortedByLikes = sortByLikes();
             Map<Integer, ArrayList<Film>> sortedMap = new TreeMap<>(Comparator.reverseOrder());
-            sortedMap.putAll(sortedByLikes);
+            sortedMap.putAll(filmsByLikes);
             return sortedMap.values().stream().flatMap(List::stream).limit(limitOfTop).collect(Collectors.toList());
         }
+    }
+
+    public List<Film> findAll() {
+        return inMemoryFilmStorage.findAll();
+    }
+
+    public Film getFilm(@PathVariable int filmId) {
+        return inMemoryFilmStorage.getFilm(filmId);
+    }
+
+    public Film create(@RequestBody Film film) {
+        return inMemoryFilmStorage.create(film);
+    }
+
+    public Film update(@RequestBody Film film) {
+        return inMemoryFilmStorage.update(film);
+    }
+
+    public void delete(@RequestBody Film film) {
+        inMemoryFilmStorage.delete(film);
     }
 }

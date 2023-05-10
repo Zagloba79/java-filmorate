@@ -14,6 +14,4 @@ public interface FilmStorage {
     void delete(Film film);
 
     Film getFilm(int filmId);
-
-    void validate(Film film);
 }

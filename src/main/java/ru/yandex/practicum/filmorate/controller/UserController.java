@@ -51,8 +51,9 @@ public class UserController {
 
     @DeleteMapping
     public void delete(@RequestBody User user) {
-        Integer id = user.getId();
-        for (Integer friendsId : userService.friends.get(id)) {
+        int id = user.getId();
+        for (User friend : userService.getFriends(id)) {
+            Integer friendsId = friend.getId();
             userService.argueFriends(id, friendsId);
         }
         userService.delete(user);

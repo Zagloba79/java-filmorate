@@ -4,65 +4,52 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.*;
 
 @Service
 @Slf4j
 public class UserService {
-    public Map<Integer, Set<Integer>> friends = new HashMap<>();
     @Autowired
-    InMemoryUserStorage inMemoryUserStorage;
+    UserStorage inMemoryUserStorage;
 
-    public List<User> getFriends(Integer id) {
-        Set<Integer> friendsOfId = friends.get(id);
-        if (friendsOfId != null && !friendsOfId.isEmpty()) {
-            return inMemoryUserStorage.getUsers(friendsOfId);
-        }
-        return Collections.EMPTY_LIST;
+    public void addFriend(Integer userId, Integer friendId) {
+        User user = inMemoryUserStorage.getUser(userId);
+        User friend = inMemoryUserStorage.getUser(friendId);
+        Set<Integer> userFriends = user.getFriends();
+        userFriends.add(friendId);
+        user.setFriends(userFriends);
+        Set<Integer> friendFriends = friend.getFriends();
+        friendFriends.add(userId);
+        friend.setFriends(friendFriends);
     }
 
-    public void addFriend(Integer id, Integer friendId) {
-        inMemoryUserStorage.getUser(id);
-        inMemoryUserStorage.getUser(friendId);
-        Set<Integer> thisUserFriends = friends.get(id);
-        if (thisUserFriends == null) {
-            thisUserFriends = new HashSet<>();
-        }
-        thisUserFriends.add(friendId);
-        friends.put(id, thisUserFriends);
-        Set<Integer> thisFriendFriends = friends.get(friendId);
-        if (thisFriendFriends == null) {
-            thisFriendFriends = new HashSet<>();
-        }
-        thisFriendFriends.add(id);
-        friends.put(friendId, thisFriendFriends);
+    public void argueFriends(Integer userId, Integer friendId) {
+        User user = inMemoryUserStorage.getUser(userId);
+        User friend = inMemoryUserStorage.getUser(friendId);
+        Set<Integer> userFriends = user.getFriends();
+        userFriends.remove(friendId);
+        user.setFriends(userFriends);
+        Set<Integer> friendFriends = friend.getFriends();
+        friendFriends.remove(userId);
+        friend.setFriends(friendFriends);
     }
 
-    public void argueFriends(Integer id, Integer friendId) {
-        inMemoryUserStorage.getUser(id);
-        inMemoryUserStorage.getUser(friendId);
-        Set<Integer> thisUserFriends = friends.get(id);
-        thisUserFriends.remove(friendId);
-        friends.put(id, thisUserFriends);
-        Set<Integer> thisFriendFriends = friends.get(friendId);
-        thisFriendFriends.remove(id);
-        friends.put(friendId, thisFriendFriends);
-    }
-
-    public List<User> showCommonFriends(int id, int otherId) {
-        Set<Integer> thisUserFriends = friends.get(id);
-        Set<Integer> thisFriendFriends = friends.get(otherId);
-        if (thisUserFriends == null || thisFriendFriends == null) {
+    public List<User> showCommonFriends(int userId, int friendId) {
+        User user = inMemoryUserStorage.getUser(userId);
+        User friend = inMemoryUserStorage.getUser(friendId);
+        Set<Integer> userFriends = user.getFriends();
+        Set<Integer> friendFriends = friend.getFriends();
+        if (userFriends == null || friendFriends == null) {
             return Collections.EMPTY_LIST;
         }
         Set<Integer> commonFriends = new HashSet<>();
-        for (Integer thisUser : thisUserFriends) {
-            if (thisFriendFriends.contains(thisUser)) {
+        for (Integer thisUser : userFriends) {
+            if (friendFriends.contains(thisUser)) {
                 commonFriends.add(thisUser);
             }
-        } //return new HashSet<User>(thisFriendFriends).retainAll(thisUserFriends);
+        }
         return inMemoryUserStorage.getUsers(commonFriends);
     }
 
@@ -84,12 +71,23 @@ public class UserService {
     }
 
     public void delete(User user) {
-        Integer id = user.getId();
-        for (Integer friendId : friends.get(id)) {
-            Set<Integer> friendFriends = friends.get(friendId);
-            friendFriends.remove(id);
-            friends.put(friendId, friendFriends);
+        Integer userId = user.getId();
+        for (Integer friendId : user.getFriends()) {
+            User friend = inMemoryUserStorage.getUser(friendId);
+            Set<Integer> friendFriends = friend.getFriends();
+            friendFriends.remove(userId);
+            friend.setFriends(friendFriends);
         }
         inMemoryUserStorage.delete(user);
+    }
+
+    public List<User> getFriends(int id) {
+        User user = inMemoryUserStorage.getUser(id);
+        List<User> friends = new ArrayList<>();
+        for (Integer friendId : user.getFriends()) {
+            User friend = inMemoryUserStorage.getUser(friendId);
+            friends.add(friend);
+        }
+        return friends;
     }
 }

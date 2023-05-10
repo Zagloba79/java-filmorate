@@ -39,8 +39,6 @@ public class InMemoryFilmStorage implements FilmStorage {
             throw new ObjectAlreadyExistException("Фильм  " + film.getId() + " уже есть в базе");
         }
         validate(film);
-//        int id = ++currentId;
-//        film.setId(id);
         film.setId(++currentId);
         films.put(currentId, film);
         log.info("Фильм  " + film.getId() + " добавлен в базу");

@@ -40,8 +40,6 @@ public class InMemoryUserStorage implements UserStorage {
             throw new ObjectAlreadyExistException("Пользователь  " + user.getId() + " уже есть зарегистрирован.");
         }
         validate(user);
-//        int id = ++currentId;
-//        user.setId(id);
         user.setId(++currentId);
         users.put(currentId, user);
         log.info("Вы только что зарегистрировали пользователя с именем " + user.getName()

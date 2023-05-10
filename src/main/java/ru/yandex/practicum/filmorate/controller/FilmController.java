@@ -11,22 +11,21 @@ import java.util.List;
 @RestController
 @RequestMapping("/films")
 public class FilmController {
-    @Autowired
-    private FilmService filmService;
-    private final InMemoryFilmStorage inMemoryFilmStorage;
+    private final FilmService filmService;
 
-    public FilmController(InMemoryFilmStorage inMemoryFilmStorage) {
-        this.inMemoryFilmStorage = inMemoryFilmStorage;
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
     }
 
     @GetMapping
     public List<Film> findAll() {
-        return inMemoryFilmStorage.findAll();
+        return filmService.findAll();
     }
 
     @GetMapping("/{filmId}")
     public Film findById(@PathVariable int filmId) {
-        return inMemoryFilmStorage.getFilm(filmId);
+        return filmService.getFilm(filmId);
     }
 
     @GetMapping("/popular")
@@ -36,12 +35,12 @@ public class FilmController {
 
     @PostMapping
     public Film create(@RequestBody Film film) {
-        return inMemoryFilmStorage.create(film);
+        return filmService.create(film);
     }
 
     @PutMapping
     public Film update(@RequestBody Film film) {
-        return inMemoryFilmStorage.update(film);
+        return filmService.update(film);
     }
 
     @PutMapping("/{id}/like/{userId}")
@@ -51,7 +50,7 @@ public class FilmController {
 
     @DeleteMapping
     public void delete(@RequestBody Film film) {
-        inMemoryFilmStorage.delete(film);
+        filmService.delete(film);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
