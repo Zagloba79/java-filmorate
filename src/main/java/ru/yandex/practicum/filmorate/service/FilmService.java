@@ -72,19 +72,19 @@ public class FilmService {
         return inMemoryFilmStorage.findAll();
     }
 
-    public Film getFilm(@PathVariable int filmId) {
+    public Film getFilm(int filmId) {
         return inMemoryFilmStorage.getFilm(filmId);
     }
 
-    public Film create(@RequestBody Film film) {
+    public Film create(Film film) {
         return inMemoryFilmStorage.create(film);
     }
 
-    public Film update(@RequestBody Film film) {
+    public Film update(Film film) {
         return inMemoryFilmStorage.update(film);
     }
 
-    public void delete(@RequestBody Film film) {
+    public void delete(Film film) {
         inMemoryFilmStorage.delete(film);
     }
 }
