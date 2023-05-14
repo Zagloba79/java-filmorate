@@ -11,8 +11,12 @@ import java.util.*;
 @Service
 @Slf4j
 public class UserService {
-    @Autowired
     UserStorage inMemoryUserStorage;
+
+    @Autowired
+    public UserService(UserStorage inMemoryUserStorage) {
+        this.inMemoryUserStorage = inMemoryUserStorage;
+    }
 
     public void addFriend(Integer userId, Integer friendId) {
         User user = inMemoryUserStorage.getUser(userId);
@@ -32,10 +36,8 @@ public class UserService {
     public void argueFriends(Integer userId, Integer friendId) {
         User user = inMemoryUserStorage.getUser(userId);
         User friend = inMemoryUserStorage.getUser(friendId);
-        Set<Integer> userFriends = user.getFriends();
-        userFriends.remove(friendId);
-        Set<Integer> friendFriends = friend.getFriends();
-        friendFriends.remove(userId);
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
     }
 
     public List<User> showCommonFriends(int userId, int friendId) {
@@ -73,12 +75,6 @@ public class UserService {
     }
 
     public void delete(User user) {
-        Integer userId = user.getId();
-        for (Integer friendId : user.getFriends()) {
-            User friend = inMemoryUserStorage.getUser(friendId);
-            Set<Integer> friendFriends = friend.getFriends();
-            friendFriends.remove(userId);
-        }
         inMemoryUserStorage.delete(user);
     }
 

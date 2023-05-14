@@ -12,17 +12,18 @@ import java.util.stream.Collectors;
 
 @Service
 public class FilmService {
-    @Autowired
     FilmStorage inMemoryFilmStorage;
-    @Autowired
     UserStorage inMemoryUserStorage;
+
+    @Autowired
+    public FilmService(FilmStorage inMemoryFilmStorage, UserStorage inMemoryUserStorage) {
+        this.inMemoryFilmStorage = inMemoryFilmStorage;
+        this.inMemoryUserStorage = inMemoryUserStorage;
+    }
 
     public void addLike(Integer filmId, Integer userId) {
         Film film = inMemoryFilmStorage.getFilm(filmId);
         Set<Integer> likes = film.getLikes();
-        if (likes == null) {
-            likes = new HashSet<>();
-        }
         if (inMemoryUserStorage.getUser(userId) != null) {
             likes.add(userId);
         }
@@ -32,11 +33,7 @@ public class FilmService {
         Film film = inMemoryFilmStorage.getFilm(filmId);
         User user = inMemoryUserStorage.getUser(userId);
         Set<Integer> likes = film.getLikes();
-        if (likes != null) {
-            if (inMemoryUserStorage.findAll().contains(user)) {
-                likes.remove(userId);
-            }
-        }
+        likes.remove(user.getId());
     }
 
     public Map<Integer, ArrayList<Film>> likesAndFilms() {
