@@ -1,2 +1,3 @@
 # java-filmorate
-Template repository for Filmorate project.
+
+![Диаграмма базы данных](src/main/resources/users_friends_films.png)
