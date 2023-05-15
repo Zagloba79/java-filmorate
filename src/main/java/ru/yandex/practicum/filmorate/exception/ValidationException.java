@@ -3,7 +3,7 @@ package ru.yandex.practicum.filmorate.exception;
 import org.springframework.http.HttpStatus;
 
 public class ValidationException extends RuntimeException {
-    private HttpStatus httpStatus;
+    private final HttpStatus httpStatus;
 
     public ValidationException(String s, HttpStatus httpStatus) {
         super(s);
