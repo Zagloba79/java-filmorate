@@ -9,10 +9,7 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -24,12 +21,12 @@ public class InMemoryUserStorage implements UserStorage {
         return new ArrayList<>(users.values());
     }
 
-    public User getUser(int id) {
+    public Optional<User> getUser(int id) {
         if (!users.containsKey(id)) {
             log.info("Пользователя с id=" + id + " не существует.");
             throw new ObjectNotFoundException("Пользователя с id=" + id + " не существует.");
         }
-        return users.get(id);
+        return Optional.of(users.get(id));
     }
 
     public User create(User user) {
@@ -38,7 +35,8 @@ public class InMemoryUserStorage implements UserStorage {
             throw new ObjectAlreadyExistException("Пользователь  " + user.getId() + " уже есть зарегистрирован.");
         }
         validate(user);
-        user.setId(++currentId);
+        ++currentId;
+        user.setId(currentId);
         users.put(currentId, user);
         log.info("Вы только что зарегистрировали пользователя с именем " + user.getName()
                 + " и электронной почтой " + user.getEmail());
