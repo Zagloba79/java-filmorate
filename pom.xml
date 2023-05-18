@@ -82,13 +82,6 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>java-rest/rest/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-
         <pluginManagement>
             <plugins>
                 <plugin>

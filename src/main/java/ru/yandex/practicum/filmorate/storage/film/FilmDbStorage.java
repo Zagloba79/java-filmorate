@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -10,13 +11,11 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Slf4j
 @Component
@@ -24,6 +23,8 @@ public class FilmDbStorage implements FilmStorage {
     private final JdbcTemplate jdbcTemplate;
     private static final LocalDate FIRST_TIME = LocalDate.of(1895, 12, 28);
     private static final int MAX_DESCRIPTION = 200;
+    KeyHolder keyHolder = new GeneratedKeyHolder();
+    Integer currentId = 0;
 
     public FilmDbStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -34,14 +35,7 @@ public class FilmDbStorage implements FilmStorage {
         SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from films");
         ArrayList<Film> films = new ArrayList<>();
         while(filmRows.next()) {
-            Film film = new Film();
-            film.setId(filmRows.getInt("id"));
-            film.setName(filmRows.getString("name"));
-            film.setDescription(filmRows.getString("description"));
-            film.setGenre(filmRows.getInt("genre"));
-            film.setRating(filmRows.getString("rating"));
-            film.setReleaseDate(filmRows.getDate("releaseDate").toLocalDate());
-            film.setDuration(filmRows.getLong("duration"));
+            Film film = fillFilm(filmRows);
             films.add(film);
         }
         return films;
@@ -50,7 +44,6 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film create(Film film) {
         validate(film);
-        KeyHolder keyHolder = new GeneratedKeyHolder();
         String insertSql = "insert into films(name, description, genre, rating, releaseDate, duration)" +
                 "values(?, ?, ?, ?, ?, ?)";
         jdbcTemplate.update(connection -> {
@@ -64,8 +57,9 @@ public class FilmDbStorage implements FilmStorage {
             ps.setString(6, Long.toString(film.getDuration()));
             return ps;
         }, keyHolder);
-
-        film.setId((Integer) keyHolder.getKey());
+        if(keyHolder.getKey()!=null) {
+            film.setId((Integer) keyHolder.getKey());
+        }
         return film;
     }
 
@@ -106,23 +100,28 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public Optional<Film> getFilm(int filmId) {
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("select * from films where id = ?", filmId);
-        if(filmRows.next()) {
-            log.info("Найден фильм: {}", filmRows.getString("id"));
-            Film film = new Film();
-            film.setId(filmRows.getInt("id"));
-            film.setName(filmRows.getString("name"));
-            film.setDescription(filmRows.getString("description"));
-            film.setGenre(filmRows.getInt("genre"));
-            film.setRating(filmRows.getString("rating"));
-            film.setReleaseDate(filmRows.getDate("releaseDate").toLocalDate());
-            film.setDuration(filmRows.getLong("duration"));
-            return Optional.of(film);
+    public Optional<Film> getFilm(int id) {
+        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT * FROM films WHERE id = ?", id);
+        if (!filmRows.next()) {
+            log.info("Фильм с идентификатором {} не найден.", id);
+            throw new ValidationException("Нет такого фильма", HttpStatus.NOT_FOUND);
         } else {
-            log.info("Фильм с идентификатором {} не найден.", filmId);
-            return Optional.empty();
+            log.info("Найден фильм: {}", filmRows.getString("id"));
+            Film film = fillFilm(filmRows);
+            return Optional.of(film);
         }
+    }
+
+    private Film fillFilm(SqlRowSet filmRows) {
+        Film film = new Film();
+        film.setId(filmRows.getInt("id"));
+        film.setName(filmRows.getString("name"));
+        film.setDescription(filmRows.getString("description"));
+        film.setGenre(filmRows.getInt("genre"));
+        film.setRating(filmRows.getString("rating"));
+        film.setReleaseDate(filmRows.getDate("releaseDate").toLocalDate());
+        film.setDuration(filmRows.getLong("duration"));
+        return film;
     }
 
     public void validate(Film film) {

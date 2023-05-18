@@ -13,7 +13,7 @@ public class User {
     private String name;
     private LocalDate birthday;
     private final Map<Integer, Boolean> friends = new HashMap<>();
-    private Collection<Film> likes;
+    private Set<Film> likes;
 
     public void setId(Integer id) {
         this.id = id;
@@ -59,7 +59,7 @@ public class User {
         return likes;
     }
 
-    public void setLikes(Collection<Film> likes) {
+    public void setLikes(Set<Film> likes) {
         this.likes = likes;
     }
 }

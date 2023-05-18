@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
@@ -10,15 +12,17 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
-@Component
 @Slf4j
+@Component("userDbStorage")
+@Primary
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
+    private int currentId = 0;
+    //KeyHolder keyHolder = new GeneratedKeyHolder();
 
     public UserDbStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -26,15 +30,10 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> findAll() {
-        SqlRowSet userRows = jdbcTemplate.queryForRowSet("select * from users");
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT * FROM users");
         ArrayList<User> users = new ArrayList<>();
-        while(userRows.next()) {
-            User user = new User();
-            user.setId(userRows.getInt("id"));
-            user.setEmail(userRows.getString("email"));
-            user.setLogin(userRows.getString("login"));
-            user.setName(userRows.getString("name"));
-            user.setBirthday(userRows.getDate("birthday").toLocalDate());
+        while (userRows.next()) {
+            User user = fillUser(userRows);
             users.add(user);
         }
         return users;
@@ -42,19 +41,14 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public Optional<User> getUser(int id) {
-        SqlRowSet userRows = jdbcTemplate.queryForRowSet("select * from users where id = ?", id);
-        if(userRows.next()) {
-            log.info("Найден пользователь: {}", userRows.getString("id"));
-            User user = new User();
-            user.setId(userRows.getInt("id"));
-            user.setEmail(userRows.getString("email"));
-            user.setLogin(userRows.getString("login"));
-            user.setName(userRows.getString("name"));
-            user.setBirthday(userRows.getDate("birthday").toLocalDate());
-            return Optional.of(user);
-        } else {
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT * FROM users WHERE id = ?", id);
+        if (!userRows.next()) {
             log.info("Пользователь с идентификатором {} не найден.", id);
-            return Optional.empty();
+            throw new ValidationException("Нет такого пользователя", HttpStatus.NOT_FOUND);
+        } else {
+            log.info("Найден пользователь: {}", userRows.getString("id"));
+            User user = fillUser(userRows);
+            return Optional.of(user);
         }
     }
 
@@ -62,7 +56,28 @@ public class UserDbStorage implements UserStorage {
     public User create(User user) {
         validate(user);
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        String insertSql = "insert into users(email, login, name, birthday) values(?, ?, ?, ?)";
+        String insertSql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection
+                    .prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, user.getEmail());
+            ps.setString(2, user.getLogin());
+            ps.setString(3, user.getName());
+            ps.setString(4, user.getBirthday().toString());
+            return ps;
+        }, keyHolder);
+        if(keyHolder.getKey()!=null){
+            user.setId((Integer) keyHolder.getKey());
+        }
+        return user;
+    }
+
+    @Override
+    public User update(User user) {
+        int id = user.getId();
+        getUser(id);
+        validate(user);
+        String insertSql = "UPDATE users SET email=?, login=?, name=?, birthday=? WHERE id = ?";
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection
                     .prepareStatement(insertSql);
@@ -70,43 +85,75 @@ public class UserDbStorage implements UserStorage {
             ps.setString(2, user.getLogin());
             ps.setString(3, user.getName());
             ps.setString(4, user.getBirthday().toString());
+            ps.setInt(5, id);
             return ps;
-        }, keyHolder);
-        user.setId((Integer) keyHolder.getKey());
-        return user;
-    }
-
-    @Override
-    public User update(User user) {
-        validate(user);
-        int id = user.getId();
-        SqlRowSet userRows = jdbcTemplate.queryForRowSet("select * from users where id = ?", id);
-        if (!userRows.next()) {
-            log.info("Пользователь с идентификатором {} не найден.", id);
-        } else {
-            String insertSql = "insert into users(email, login, name, birthday) values(?, ?, ?, ?)";
-            jdbcTemplate.update(connection -> {
-                PreparedStatement ps = connection
-                        .prepareStatement(insertSql);
-                ps.setString(1, user.getEmail());
-                ps.setString(2, user.getLogin());
-                ps.setString(3, user.getName());
-                ps.setString(4, user.getBirthday().toString());
-                return ps;
-            });
-        }
+        });
         return user;
     }
 
     @Override
     public void delete(User user) {
         int id = user.getId();
-        SqlRowSet userRows = jdbcTemplate.queryForRowSet("select * from users where id = ?", id);
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT * FROM users WHERE id=?", id);
         if (!userRows.next()) {
             log.info("Пользователь с идентификатором {} не найден.", id);
         } else {
-            jdbcTemplate.queryForRowSet("delete from users where id = ?", id);
+            jdbcTemplate.update("DELETE FROM users WHERE id = ?", id);
         }
+    }
+
+    @Override
+    public void addFriends(int userId, int friendId) {
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT * FROM friendship " +
+                "WHERE user_id=? AND friend_id=?", friendId, userId);
+        if (userRows.next()) {
+            jdbcTemplate.update("UPDATE friendship SET confirmed_friend=true WHERE " +
+                    "user_id=? AND friend_id=?", friendId, userId);
+        } else {
+            jdbcTemplate.update("INSERT INTO friendship (user_id, friend_id) VALUES(?, ?)", userId, friendId);
+        }
+    }
+
+    @Override
+    public void argueFriends(int userId, int friendId) {
+        SqlRowSet userFriendRows = jdbcTemplate.queryForRowSet("SELECT * FROM friendship " +
+                "WHERE user_id=? AND friend_id=?", userId, friendId);
+        SqlRowSet friendUserRows = jdbcTemplate.queryForRowSet("SELECT * FROM friendship " +
+                "WHERE user_id=? AND friend_id=?", friendId, userId);
+        if (!userFriendRows.next() && !friendUserRows.next()) {
+            log.info("Дружба не зафиксирована.");
+        } else {
+            jdbcTemplate.update("DELETE FROM friendship WHERE user_id=? AND friend_id=?", userId, friendId);
+            jdbcTemplate.update("DELETE FROM friendship WHERE user_id=? AND friend_id=?", friendId, userId);
+        }
+    }
+
+    @Override
+    public Set<User> showCommonFriends(int userId, int friendId) {
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT friend_id FROM friendship WHERE user_id " +
+               "IN (userId, friendId) GROUP BY COUNT(friend_id) HAVING COUNT(friend_id)=2", userId, friendId);
+        SqlRowSet friendRows = jdbcTemplate.queryForRowSet("SELECT user_id FROM friendship WHERE friend_id " +
+                "IN (userId, friendId) GROUP BY COUNT(user_id) HAVING COUNT(user_id)=2", userId, friendId);
+        Set<User> commonFriends = new HashSet<>();
+        while (userRows.next()) {
+            User user = fillUser(userRows);
+            commonFriends.add(user);
+        }
+        while (friendRows.next()) {
+            User user = fillUser(friendRows);
+            commonFriends.add(user);
+        }
+        return commonFriends;
+    }
+
+    private User fillUser(SqlRowSet userRows) {
+        User user = new User();
+        user.setId(userRows.getInt("id"));
+        user.setEmail(userRows.getString("email"));
+        user.setLogin(userRows.getString("login"));
+        user.setName(userRows.getString("name"));
+        user.setBirthday(userRows.getDate("birthday").toLocalDate());
+        return user;
     }
 
     private void validate(User user) {

@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 @Slf4j
-@Component
+@Component("inMemoryUserStorage")
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Integer, User> users = new HashMap<>();
     private int currentId = 0;
@@ -62,6 +62,21 @@ public class InMemoryUserStorage implements UserStorage {
         }
         users.remove(user.getId());
         log.info("Пользователь  " + user.getId() + " удалён");
+    }
+
+    @Override
+    public void addFriends(int userId, int friendId) {
+
+    }
+
+    @Override
+    public void argueFriends(int userId, int friendId) {
+
+    }
+
+    @Override
+    public Set<User> showCommonFriends(int userId, int friendId) {
+        return null;
     }
 
     private void validate(User user) {
