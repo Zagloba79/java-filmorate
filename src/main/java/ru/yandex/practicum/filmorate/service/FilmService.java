@@ -1,102 +1,89 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+
+import lombok.extern.slf4j.Slf4j;
+import ru.yandex.practicum.filmorate.exception.ObjectNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.LikeStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
+@Service
 public class FilmService {
-    @Qualifier("filmStorage")
-    private FilmStorage filmStorage;
-    @Qualifier("userStorage")
-    private UserStorage userStorage;
+	@Qualifier("filmDbStorage")
+	private final FilmStorage filmStorage;
+	@Qualifier("userDbStorage")
+	private final UserStorage userStorage;
 
-    public FilmService(FilmStorage filmDbStorage, UserStorage userDbStorage) {
-        this.filmStorage = filmDbStorage;
-        this.userStorage = userDbStorage;
-    }
+	private final LikeStorage likeStorage;
 
-//    public void addLike(int filmId, int userId) {
-//        Optional<Film> filmOptional = filmStorage.getFilm(filmId);
-//        Optional<User> userOptional = userStorage.getUser(userId);
-//        if (filmOptional.isPresent() && userOptional.isPresent()) {
-//            Film film = filmOptional.get();
-//            User user = userOptional.get();
-//            Set<User> thisFilmFans = film.getFans();
-//            Set<Film> thisUserLikes = user.getLikes();
-//            if (userFriends == null) {
-//                userFriends = new HashMap<>();
-//            }
-//            if (friendFriends.containsKey(userId)) {
-//                userFriends.put(friendId, true);
-//                friendFriends.remove(userId);
-//                friendFriends.put(userId, true);
-//            } else {
-//                userFriends.put(friendId, false);
-//            }
-//        }
-//        Optional<Film> film = filmStorage.getFilm(filmId);
-//        Set<Integer> likes = film.getLikes();
-//        if (filmStorage.getUser(userId) != null) {
-//            likes.add(userId);
-//        }
-//    }
+	public FilmService(FilmStorage filmDbStorage, UserStorage userDbStorage, LikeStorage likeStorage) {
+		this.filmStorage = filmDbStorage;
+		this.userStorage = userDbStorage;
+		this.likeStorage = likeStorage;
+	}
 
-//    public void deleteLike(Integer filmId, Integer userId) {
-//        Optional<Film> film = filmStorage.getFilm(filmId);
-//        Optional<User> user = userStorage.getUser(userId);
-//        Set<Integer> likes = film.getLikes();
-//        likes.remove(user.getId());
-//    }
+	public void addLike(int filmId, int userId) {
+		Optional<Film> filmOptional = filmStorage.getFilm(filmId);
+		Optional<User> userOptional = userStorage.getUser(userId);
+		if (filmOptional.isPresent() && userOptional.isPresent()) {
+			likeStorage.add(filmId, userId);
+		}
+	}
 
-//    public Map<Integer, ArrayList<Film>> likesAndFilms() {
-//        Map<Integer, ArrayList<Film>> filmsByLikes = new HashMap<>();
-//        for (Film film : filmStorage.findAll()) {
-//            Integer countOfLikes = film.getLikes().size();
-//            ArrayList<Film> thisLikes;
-//            if (!filmsByLikes.containsKey(countOfLikes)) {
-//                thisLikes = new ArrayList<>();
-//            } else {
-//                thisLikes = filmsByLikes.get(countOfLikes);
-//            }
-//            thisLikes.add(film);
-//            filmsByLikes.put(countOfLikes, thisLikes);
-//        }
-//        return filmsByLikes;
-//    }
+	public void deleteLike(Integer filmId, Integer userId) {
+		Optional<Film> filmOptional = filmStorage.getFilm(filmId);
+		Optional<User> userOptional = userStorage.getUser(userId);
+		if (filmOptional.isPresent() && userOptional.isPresent()) {
+			likeStorage.delete(filmId, userId);
+		}
 
-//    public List<Film> showTopFilms(int limitOfTop) {
-//        Map<Integer, ArrayList<Film>> filmsByLikes = likesAndFilms();
-//        if (filmsByLikes.isEmpty()) {
-//            return filmStorage.findAll().stream().limit(limitOfTop).collect(Collectors.toList());
-//        } else {
-//            Map<Integer, ArrayList<Film>> sortedMap = new TreeMap<>(Comparator.reverseOrder());
-//            sortedMap.putAll(filmsByLikes);
-//            return sortedMap.values().stream().flatMap(List::stream).limit(limitOfTop).collect(Collectors.toList());
-//        }
-//    }
+	}
 
-    public List<Film> findAll() {
-        return filmStorage.findAll();
-    }
+	public List<Film> showTopList(int count) {
+		List<Film> popularFilms = filmStorage.findAll().stream()
+				.sorted(this::likeCompare)
+				.limit(count)
+				.collect(Collectors.toList());
+		log.trace("Возвращены популярные фильмы: {}.", popularFilms);
+		return popularFilms;
 
-    public Optional<Film> getFilm(int filmId) {
-        return filmStorage.getFilm(filmId);
-    }
+	}
 
-    public Film create(Film film) {
-        return filmStorage.create(film);
-    }
+	private int likeCompare(Film film, Film otherFilm) {
+		return Integer.compare(likeStorage.count(otherFilm.getId()), likeStorage.count(film.getId()));
+	}
 
-    public Film update(Film film) {
-        return filmStorage.update(film);
-    }
+	public List<Film> findAll() {
+		return filmStorage.findAll();
+	}
 
-    public void delete(Film film) {
-        filmStorage.delete(film);
-    }
+	public Film getFilm(int filmId) {
+		Optional<Film> filmOptional = filmStorage.getFilm(filmId);
+		if (filmOptional.isPresent()) {
+			return filmOptional.get();
+		} else {
+			throw new ObjectNotFoundException("film with id = " + filmId + " not found");
+		}
+	}
+
+	public Film create(Film film) {
+		return filmStorage.create(film);
+	}
+
+	public Film update(Film film) {
+		filmStorage.getFilm(film.getId());
+		return filmStorage.update(film);
+	}
+
+	public void delete(Film film) {
+		filmStorage.delete(film);
+	}
 }
