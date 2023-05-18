@@ -18,7 +18,6 @@ public class LikeStorage {
         jdbcTemplate.update("INSERT INTO likes (film_id, user_id) VALUES (?, ?)", filmId, userId);
     }
 
-    //'^[a-z]([a-zA-Z0-9]*)?$'.
     public void delete(long filmId, long userId) {
         jdbcTemplate.update("DELETE FROM likes WHERE film_id=? AND user_id=?", filmId, userId);
     }
