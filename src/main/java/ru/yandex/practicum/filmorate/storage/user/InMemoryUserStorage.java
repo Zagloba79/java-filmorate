@@ -79,6 +79,11 @@ public class InMemoryUserStorage implements UserStorage {
         return null;
     }
 
+    @Override
+    public List<User> getFriends(User user) {
+        return null;
+    }
+
     private void validate(User user) {
         if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
             log.info("Электронная почта не может быть пустой и должна содержать символ @");

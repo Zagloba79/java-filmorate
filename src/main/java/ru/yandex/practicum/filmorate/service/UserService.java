@@ -118,11 +118,12 @@ public class UserService {
 
     public List<User> getFriends(int id) {
         User user = getUser(id);
-        List<User> friends = new ArrayList<>();
-        for (Integer friendId : user.getFriends().keySet()) {
-            User friend = getUser(friendId);
-            friends.add(friend);
-        }
-        return friends;
+//        List<User> friends = new ArrayList<>();
+//        for (Integer friendId : user.getFriends().keySet()) {
+//            User friend = getUser(friendId);
+//            friends.add(friend);
+//        }
+//        return friends;
+        return userStorage.getFriends(user);
     }
 }

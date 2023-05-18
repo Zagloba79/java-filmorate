@@ -22,4 +22,6 @@ public interface UserStorage {
     void argueFriends(int userId, int friendId);
 
     Set<User> showCommonFriends(int userId, int friendId);
+
+    List<User> getFriends(User user);
 }

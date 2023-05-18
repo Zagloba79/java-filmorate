@@ -21,8 +21,7 @@ import java.util.*;
 @Primary
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
-    private int currentId = 0;
-    //KeyHolder keyHolder = new GeneratedKeyHolder();
+
 
     public UserDbStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -130,10 +129,11 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public Set<User> showCommonFriends(int userId, int friendId) {
-        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT friend_id FROM friendship WHERE user_id " +
-               "IN (userId, friendId) GROUP BY COUNT(friend_id) HAVING COUNT(friend_id)=2", userId, friendId);
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT f1.friend_id FROM friendship AS f1 JOIN " +
+                "friendship AS f2 ON f1.friend_id=f2.friend_id WHERE (f1.user_id =1 AND f1.friend_id <> 2) AND " +
+                "(f2.user_id =2 AND f2.friend_id <> 1)", userId, friendId);
         SqlRowSet friendRows = jdbcTemplate.queryForRowSet("SELECT user_id FROM friendship WHERE friend_id " +
-                "IN (userId, friendId) GROUP BY COUNT(user_id) HAVING COUNT(user_id)=2", userId, friendId);
+                "IN (?, ?) GROUP BY COUNT(user_id) HAVING COUNT(user_id)=2", userId, friendId);
         Set<User> commonFriends = new HashSet<>();
         while (userRows.next()) {
             User user = fillUser(userRows);
@@ -144,6 +144,24 @@ public class UserDbStorage implements UserStorage {
             commonFriends.add(user);
         }
         return commonFriends;
+    }
+
+    @Override
+    public List<User> getFriends(User user) {
+        validate(user);
+        int id = user.getId();
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT f.user_id, f.friend_id, u.email, u.login, u.name, " +
+                "u.birthday FROM friendship AS f WHERE f.user_id=? INNER JOIN users AS u ON u.id=f.friend_id;", id);
+        if (!userRows.next()) {
+            log.info("Друзья не найдены");
+            throw new ValidationException("Нет друзей", HttpStatus.NOT_FOUND);
+        }
+        ArrayList<User> friends = new ArrayList<>();
+        while (userRows.next()) {
+            User friend = fillUser(userRows);
+            friends.add(friend);
+        }
+        return friends;
     }
 
     private User fillUser(SqlRowSet userRows) {

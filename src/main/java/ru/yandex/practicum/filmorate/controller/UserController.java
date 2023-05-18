@@ -38,8 +38,7 @@ public class UserController {
 
     @PostMapping
     public User create(@RequestBody User user) {
-        User createdUser = userService.create(user);
-        return createdUser;
+        return userService.create(user);
     }
 
     @PutMapping

@@ -55,7 +55,7 @@ public class User {
         return friends;
     }
 
-    public Collection<Film> getLikes() {
+    public Set<Film> getLikes() {
         return likes;
     }
 
