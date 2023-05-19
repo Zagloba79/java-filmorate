@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.exception.ApiError;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.MPA;
 
 import java.time.LocalDate;
 
@@ -31,6 +32,9 @@ public class FilmControllerTest {
 
     @Test
     public void test_positive_film_adding() throws Exception {
+        MPA mpa = new MPA();
+        mpa.setId(1);
+        mpa.setName("G");
         Film film = new Film();
         String filmAsString = objectMapper.writeValueAsString(film);
         String responseAsString = mockMvc.perform(post("/films")
@@ -62,7 +66,7 @@ public class FilmControllerTest {
                 .getContentAsString();
         apiErrorResponse = objectMapper.readValue(responseAsString, ApiError.class);
         assertEquals("Продолжительность фильма должна быть больше нуля", apiErrorResponse.getMessage());
-
+        film.setMpa(mpa);
         film.setDuration(3000);
         mockMvc.perform(post("/films")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -72,12 +76,16 @@ public class FilmControllerTest {
 
     @Test
     public void test_positive_film_update() throws Exception {
+        MPA mpa = new MPA();
         Film film = new Film();
         film.setId(125123);
         film.setName("title");
         film.setDescription("description");
         film.setReleaseDate(LocalDate.of(2023, 12, 28));
         film.setDuration(3000);
+        mpa.setId(1);
+        mpa.setName("G");
+        film.setMpa(mpa);
         final String responseAsString = mockMvc.perform(put("/films")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(film))).andExpect(status().isNotFound())

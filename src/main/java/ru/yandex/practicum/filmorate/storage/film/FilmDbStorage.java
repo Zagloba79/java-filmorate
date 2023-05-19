@@ -22,6 +22,9 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.hibernate.hql.internal.antlr.SqlTokenTypes.NULL;
+
+
 @Slf4j
 @Component("filmDbStorage")
 public class FilmDbStorage implements FilmStorage {
@@ -50,7 +53,6 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film create(Film film) {
         validate(film);
-
         String insertSql = "insert into films(name, description, rating_id, release_date, duration)" +
                 "values(?, ?, ?, ?, ?)";
         LocalDateTime releaseDateAsTimeStamp = film.getReleaseDate().atTime(LocalTime.MIDNIGHT);
@@ -59,9 +61,13 @@ public class FilmDbStorage implements FilmStorage {
                     .prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, film.getName());
             ps.setString(2, film.getDescription());
-            ps.setInt(3, film.getMpa().getId());
+            if (film.getMpa() != null) {
+                ps.setInt(3, film.getMpa().getId());
+            } else {
+                ps.setNull(3, NULL);
+            }
             ps.setTimestamp(4, Timestamp.valueOf(releaseDateAsTimeStamp));
-            ps.setString(5, Long.toString(film.getDuration()));
+            ps.setLong(5, film.getDuration());
             return ps;
         }, keyHolder);
         if (keyHolder.getKey() != null) {
@@ -141,10 +147,9 @@ public class FilmDbStorage implements FilmStorage {
     public void updateGenresForFilmId(long filmId, Collection<Genre> genres) {
 
         deleteGenresForFilmId(filmId);
-        Set<Integer> genresIds = genres.stream().map(e -> e.getId()).collect(Collectors.toSet());
+        Set<Integer> genresIds = genres.stream().map(Genre::getId).collect(Collectors.toSet());
         for (Integer genreId : genresIds) {
-            jdbcTemplate.update(""
-                    + "INSERT INTO film_genres (film_id, genre_id) "
+            jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) "
                     + "VALUES (?, ?)", filmId, genreId);
         }
     }
@@ -164,7 +169,6 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void deleteGenresForFilmId(long filmId) {
-
         jdbcTemplate.update(""
                 + "DELETE "
                 + "FROM film_genres "
