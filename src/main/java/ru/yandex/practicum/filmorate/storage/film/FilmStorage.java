@@ -15,4 +15,6 @@ public interface FilmStorage {
     void delete(Film film);
 
     Optional<Film> getFilm(int filmId);
+
+    List<Film> showTopList(int count);
 }

@@ -8,20 +8,23 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.ObjectNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component("userDbStorage")
 @Primary
 public class UserDbStorage implements UserStorage {
-    private final JdbcTemplate jdbcTemplate;
 
+    private final JdbcTemplate jdbcTemplate;
 
     public UserDbStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -43,7 +46,7 @@ public class UserDbStorage implements UserStorage {
         SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT * FROM users WHERE id = ?", id);
         if (!userRows.next()) {
             log.info("Пользователь с идентификатором {} не найден.", id);
-            throw new ValidationException("Нет такого пользователя", HttpStatus.NOT_FOUND);
+            throw new ObjectNotFoundException("Нет такого пользователя", HttpStatus.NOT_FOUND);
         } else {
             log.info("Найден пользователь: {}", userRows.getString("id"));
             User user = fillUser(userRows);
@@ -65,7 +68,7 @@ public class UserDbStorage implements UserStorage {
             ps.setString(4, user.getBirthday().toString());
             return ps;
         }, keyHolder);
-        if(keyHolder.getKey()!=null){
+        if (keyHolder.getKey() != null) {
             user.setId((Integer) keyHolder.getKey());
         }
         return user;
@@ -128,19 +131,20 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public Set<User> showCommonFriends(int userId, int friendId) {
-        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT f1.friend_id FROM friendship AS f1 JOIN " +
-                "friendship AS f2 ON f1.friend_id=f2.friend_id WHERE (f1.user_id =1 AND f1.friend_id <> 2) AND " +
-                "(f2.user_id =2 AND f2.friend_id <> 1)", userId, friendId);
-        SqlRowSet friendRows = jdbcTemplate.queryForRowSet("SELECT user_id FROM friendship WHERE friend_id " +
-                "IN (?, ?) GROUP BY COUNT(user_id) HAVING COUNT(user_id)=2", userId, friendId);
-        Set<User> commonFriends = new HashSet<>();
+    public List<User> showCommonFriends(int userId, int friendId) {
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet(
+                "SELECT u.* FROM users u" +
+                        "  INNER JOIN" +
+                        "  friendship f1 " +
+                        "  ON u.id=f1.friend_id" +
+                        "  INNER  JOIN" +
+                        "  friendship f2" +
+                        "  ON f1.friend_id=f2.friend_id" +
+                        "  WHERE (f1.user_id = ? AND f1.friend_id <> ?) AND  (f2.user_id = ? AND f2.friend_id <> ?)",
+                userId, friendId, friendId, userId);
+        List<User> commonFriends = new ArrayList<>();
         while (userRows.next()) {
             User user = fillUser(userRows);
-            commonFriends.add(user);
-        }
-        while (friendRows.next()) {
-            User user = fillUser(friendRows);
             commonFriends.add(user);
         }
         return commonFriends;
@@ -150,13 +154,10 @@ public class UserDbStorage implements UserStorage {
     public List<User> getFriends(User user) {
         validate(user);
         int id = user.getId();
-        SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT f.user_id, f.friend_id, u.email, u.login, u.name, " +
-                "u.birthday FROM friendship AS f WHERE f.user_id=? INNER JOIN users AS u ON u.id=f.friend_id;", id);
-        if (!userRows.next()) {
-            log.info("Друзья не найдены");
-            throw new ValidationException("Нет друзей", HttpStatus.NOT_FOUND);
-        }
-        ArrayList<User> friends = new ArrayList<>();
+        SqlRowSet userRows = jdbcTemplate.queryForRowSet(
+                "SELECT u.* FROM users AS u " +
+                        "INNER JOIN friendship AS f ON f.friend_id=u.id WHERE f.user_id=?", id);
+        List<User> friends = new ArrayList<>();
         while (userRows.next()) {
             User friend = fillUser(userRows);
             friends.add(friend);

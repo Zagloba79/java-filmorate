@@ -30,6 +30,17 @@ public class InMemoryFilmStorage implements FilmStorage {
         return Optional.of(films.get(id));
     }
 
+    @Override
+    public List<Film> showTopList(int count) {
+        List<Film> sortedCollection = findAll();
+        Collections.sort(sortedCollection, (film1, film2) -> film2.getRating() - film1.getRating());
+        List<Film> topList = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            topList.add(sortedCollection.get(i));
+        }
+        return topList;
+    }
+
     public Film create(Film film) {
         if (films.containsKey(film.getId())) {
             log.info("Фильм  " + film.getId() + " уже есть в базе.");
