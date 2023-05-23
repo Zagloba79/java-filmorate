@@ -66,22 +66,56 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public void addFriends(int userId, int friendId) {
-
+        User user = getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        User friend = getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        if (friend.getFriends().containsKey(userId)) {
+            user.getFriends().put(friendId, true);
+            friend.getFriends().remove(userId);
+            friend.getFriends().put(userId, true);
+        } else {
+            user.getFriends().put(friendId, false);
+        }
     }
 
     @Override
     public void argueFriends(int userId, int friendId) {
-
+        User user = getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        User friend = getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        user.getFriends().put(friendId, true);
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
     }
 
     @Override
     public List<User> showCommonFriends(int userId, int friendId) {
-        return null;
+        ArrayList<User> commonFriends = new ArrayList<>();
+        User user = getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        User friend = getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        for (Integer id : user.getFriends().keySet()) {
+            if (friend.getFriends().containsKey(id)) {
+                User theirFriend = getUser(id).orElseThrow(() ->
+                        new ObjectNotFoundException("Пользователя с " + id + " не существует."));
+                commonFriends.add(theirFriend);
+            }
+        }
+        return commonFriends;
     }
 
     @Override
     public List<User> getFriends(User user) {
-        return null;
+        ArrayList<User> friends = new ArrayList<>();
+        for (Integer id : user.getFriends().keySet()) {
+            User friend = getUser(id).orElseThrow(() ->
+                    new ObjectNotFoundException("Пользователя с " + id + " не существует."));
+            friends.add(friend);
+        }
+        return friends;
     }
 
     private void validate(User user) {

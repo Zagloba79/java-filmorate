@@ -25,20 +25,26 @@ public class UserService {
     }
 
     public void addFriend(Integer userId, Integer friendId) {
-        userStorage.getUser(userId).orElseThrow(() -> new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
-        userStorage.getUser(friendId).orElseThrow(() -> new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        userStorage.getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        userStorage.getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
         userStorage.addFriends(userId, friendId);
     }
 
     public void argueFriends(int userId, int friendId) {
-        userStorage.getUser(userId).orElseThrow(() -> new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
-        userStorage.getUser(friendId).orElseThrow(() -> new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        userStorage.getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        userStorage.getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
         userStorage.argueFriends(userId, friendId);
     }
 
     public List<User> showCommonFriends(int userId, int friendId) {
-        userStorage.getUser(userId).orElseThrow(() -> new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
-        userStorage.getUser(friendId).orElseThrow(() -> new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        userStorage.getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        userStorage.getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
         return userStorage.showCommonFriends(userId, friendId);
     }
 
@@ -47,7 +53,8 @@ public class UserService {
     }
 
     public User getUser(int userId) {
-        return userStorage.getUser(userId).orElseThrow(() -> new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        return userStorage.getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
     }
 
     public User create(User user) {

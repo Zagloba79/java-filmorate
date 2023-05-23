@@ -40,7 +40,6 @@ public class GenreStorage {
             genre.setId(genresRows.getInt("id"));
             genre.setName(genresRows.getString("name"));
             genresList.add(genre);
-
         }
         return genresList;
     }

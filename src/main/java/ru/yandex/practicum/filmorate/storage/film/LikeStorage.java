@@ -14,15 +14,14 @@ public class LikeStorage {
 
     private final JdbcTemplate jdbcTemplate;
 
-
-    public void add(long filmId, long user_id) {
-        jdbcTemplate.update("INSERT INTO likes (film_id, user_id) VALUES (?, ?)", filmId, user_id);
+    public void add(long filmId, long userId) {
+        jdbcTemplate.update("INSERT INTO likes (film_id, user_id) VALUES (?, ?)", filmId, userId);
     }
 
-    public void delete(long filmId, long user_id) {
+    public void delete(long filmId, long userId) {
         jdbcTemplate.update("DELETE FROM likes "
                 + "WHERE film_id=? "
-                + "AND user_id=?", filmId, user_id);
+                + "AND user_id=?", filmId, userId);
     }
 
     public Integer count(long filmId) {
