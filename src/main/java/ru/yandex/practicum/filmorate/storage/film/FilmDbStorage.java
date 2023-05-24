@@ -11,7 +11,6 @@ import ru.yandex.practicum.filmorate.exception.ObjectNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.MPA;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -49,6 +48,7 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
+    @Override
     public List<Film> showTopList(int count) {
         SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT * FROM films " +
                 "ORDER BY rating DESC LIMIT ?", count);
@@ -57,7 +57,7 @@ public class FilmDbStorage implements FilmStorage {
         return films;
     }
 
-    public List<Film> createListOfFilms(SqlRowSet filmRows) {
+    private List<Film> createListOfFilms(SqlRowSet filmRows) {
         ArrayList<Film> films = new ArrayList<>();
         while (filmRows.next()) {
             Film film = fillFilm(filmRows);
@@ -148,18 +148,17 @@ public class FilmDbStorage implements FilmStorage {
 
     private Film fillFilm(SqlRowSet filmRows) {
         Film film = new Film();
-        film.setId(filmRows.getInt("id"));
+        int id = filmRows.getInt("id");
+        film.setId(id);
         film.setName(filmRows.getString("name"));
         film.setDescription(filmRows.getString("description"));
-        int mpaId = filmRows.getInt("mpa_id");
-        MPA mpa = mpaStorage.getMPA(mpaId);
-        film.setMpa(mpa);
+        film.setMpa(mpaStorage.getMpaByFilmId(id));
         film.setReleaseDate(filmRows.getTimestamp("release_date").toLocalDateTime().toLocalDate());
         film.setDuration(filmRows.getLong("duration"));
         return film;
     }
 
-    public void updateGenresForFilmId(long filmId, Collection<Genre> genres) {
+    private void updateGenresForFilmId(long filmId, Collection<Genre> genres) {
         deleteGenresForFilmId(filmId);
         Set<Integer> genresIds = genres.stream().map(e -> e.getId()).collect(Collectors.toSet());
         for (Integer genreId : genresIds) {
@@ -168,7 +167,7 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
-    public void fillGenres(List<Film> films) {
+    private void fillGenres(List<Film> films) {
         Map<Integer, Film> filmMap = films.stream()
                 .collect(Collectors.toMap(Film::getId, Function.identity()));
         Map<Integer, Genre> genreMap = genreStorage.getAllGenre().stream()
@@ -192,7 +191,7 @@ public class FilmDbStorage implements FilmStorage {
                 + "WHERE film_id=?", filmId);
     }
 
-    public void validate(Film film) {
+    private void validate(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
             log.info("У фильма нет названия");
             throw new ValidationException("У фильма нет названия");

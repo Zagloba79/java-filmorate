@@ -19,6 +19,20 @@ public class MPAStorage {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    public MPA getMpaByFilmId(int filmId) {
+        SqlRowSet mpaRows = jdbcTemplate.queryForRowSet("SELECT m.* FROM mpa AS m " +
+                "INNER JOIN films AS f " +
+                "ON f.mpa_id = m.id" +
+                " WHERE f.id = ?", filmId);
+        if (!mpaRows.next()) {
+            throw new ObjectNotFoundException("mpa not found");
+        }
+        MPA mpa = new MPA();
+        mpa.setId(mpaRows.getInt("id"));
+        mpa.setName(mpaRows.getString("name"));
+        return mpa;
+    }
+
     public MPA getMPA(int id) {
         SqlRowSet userRows = jdbcTemplate.queryForRowSet("SELECT * FROM mpa WHERE id = ?", id);
         if (!userRows.next()) {

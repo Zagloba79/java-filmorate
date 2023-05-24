@@ -18,10 +18,12 @@ public class InMemoryFilmStorage implements FilmStorage {
     private static final LocalDate FIRST_TIME = LocalDate.of(1895, 12, 28);
     private static final int MAX_DESCRIPTION = 200;
 
+    @Override
     public List<Film> findAll() {
         return new ArrayList<>(films.values());
     }
 
+    @Override
     public Optional<Film> getFilm(int id) {
         if (!films.containsKey(id)) {
             log.info("Фильма с id=" + id + " не существует.");
@@ -41,6 +43,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         return topList;
     }
 
+    @Override
     public Film create(Film film) {
         if (films.containsKey(film.getId())) {
             log.info("Фильм  " + film.getId() + " уже есть в базе.");
@@ -53,6 +56,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         return film;
     }
 
+    @Override
     public Film update(Film film) {
         if (!films.containsKey(film.getId())) {
             log.error("Нет такого фильма");
@@ -64,6 +68,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         return film;
     }
 
+    @Override
     public void delete(Film film) {
         if (!films.containsKey(film.getId())) {
             log.error("Нет такого фильма");
@@ -74,7 +79,7 @@ public class InMemoryFilmStorage implements FilmStorage {
         log.info("Фильм  " + film.getId() + " удалён");
     }
 
-    public void validate(Film film) {
+    private void validate(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
             log.info("У фильма нет названия");
             throw new ValidationException("У фильма нет названия");

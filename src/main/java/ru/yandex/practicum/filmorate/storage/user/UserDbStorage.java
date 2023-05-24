@@ -139,9 +139,9 @@ public class UserDbStorage implements UserStorage {
                         "  ON u.id=f1.friend_id" +
                         "  INNER  JOIN" +
                         "  friendship f2" +
-                        "  ON f1.friend_id=f2.friend_id" +
-                        "  WHERE (f1.user_id = ? AND f1.friend_id <> ?) AND  (f2.user_id = ? AND f2.friend_id <> ?)",
-                userId, friendId, friendId, userId);
+                        "  ON u.id = f2.friend_id" +
+                        "  WHERE f1.user_id = ? AND f2.user_id = ?",
+                userId, friendId);
         List<User> commonFriends = new ArrayList<>();
         while (userRows.next()) {
             User user = fillUser(userRows);

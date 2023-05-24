@@ -72,7 +72,6 @@ public class UserService {
             int rating = film.getRating();
             film.setRating(--rating);
             likeStorage.delete(filmId, userId);
-            likeStorage.update(filmId);
         }
         userStorage.delete(user);
     }

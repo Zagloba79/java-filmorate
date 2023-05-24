@@ -33,7 +33,6 @@ public class FilmService {
         userStorage.getUser(userId).orElseThrow(() ->
                 new ObjectNotFoundException("user with id = " + userId + " not found"));
         likeStorage.add(filmId, userId);
-        likeStorage.update(filmId);
     }
 
     public void deleteLike(Integer filmId, Integer userId) {
@@ -42,7 +41,6 @@ public class FilmService {
         userStorage.getUser(userId).orElseThrow(() ->
                 new ObjectNotFoundException("user with id = " + userId + " not found"));
         likeStorage.delete(filmId, userId);
-        likeStorage.update(filmId);
     }
 
     public List<Film> showTopList(int count) {
