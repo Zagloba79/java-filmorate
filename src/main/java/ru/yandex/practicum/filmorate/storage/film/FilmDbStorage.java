@@ -41,9 +41,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> findAll() {
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.id AS film_id, " +
-                "f.name, f.description, f.rating, f.mpa_id, f.release_date, f.duration, " +
-                "m.name AS mpa, m.id AS mpa_id " +
+        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.*, m.name AS mpa " +
                 "FROM films AS f INNER JOIN mpa AS m " +
                 "ON m.id = f.mpa_id");
         List<Film> films = createListOfFilms(filmRows);
@@ -53,9 +51,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> showTopList(int count) {
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.id AS film_id, " +
-                "f.name, f.description, f.rating, f.mpa_id, f.release_date, f.duration, " +
-                "m.name AS mpa, m.id AS mpa_id " +
+        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.*, m.name AS mpa " +
                 "FROM films AS f INNER JOIN mpa AS m " +
                 "ON m.id = f.mpa_id " +
                 "ORDER BY rating DESC LIMIT ?", count);
@@ -97,7 +93,7 @@ public class FilmDbStorage implements FilmStorage {
             film.setId((Integer) keyHolder.getKey());
         }
         updateGenresForFilmId(film.getId(), film.getGenres());
-        return  getFilm(film.getId()).get();
+        return getFilm(film.getId()).get();
     }
 
     @Override
@@ -141,9 +137,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Optional<Film> getFilm(int id) {
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.id AS film_id, " +
-                "f.name, f.description, f.rating, f.mpa_id, f.release_date, f.duration, " +
-                "m.name AS mpa, m.id AS mpa_id " +
+        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.*, m.name AS mpa " +
                 "FROM films AS f INNER JOIN mpa AS m " +
                 "ON m.id = f.mpa_id WHERE f.id = ?", id);
         if (!filmRows.next()) {
@@ -159,7 +153,7 @@ public class FilmDbStorage implements FilmStorage {
 
     private Film fillFilm(SqlRowSet filmRows) {
         Film film = new Film();
-        int id = filmRows.getInt("FILM_ID");
+        int id = filmRows.getInt("ID");
         film.setId(id);
         film.setName(filmRows.getString("NAME"));
         film.setDescription(filmRows.getString("DESCRIPTION"));
