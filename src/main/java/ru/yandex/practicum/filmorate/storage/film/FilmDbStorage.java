@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.exception.ObjectNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MPA;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
@@ -30,19 +31,21 @@ public class FilmDbStorage implements FilmStorage {
     private static final LocalDate FIRST_TIME = LocalDate.of(1895, 12, 28);
     private static final int MAX_DESCRIPTION = 200;
     private final JdbcTemplate jdbcTemplate;
-    private final MPAStorage mpaStorage;
     private final GenreStorage genreStorage;
     KeyHolder keyHolder = new GeneratedKeyHolder();
 
-    public FilmDbStorage(JdbcTemplate jdbcTemplate, MPAStorage mpaStorage, GenreStorage genreStorage) {
+    public FilmDbStorage(JdbcTemplate jdbcTemplate, GenreStorage genreStorage) {
         this.jdbcTemplate = jdbcTemplate;
-        this.mpaStorage = mpaStorage;
         this.genreStorage = genreStorage;
     }
 
     @Override
     public List<Film> findAll() {
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT * FROM films");
+        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.id AS film_id, " +
+                "f.name, f.description, f.rating, f.mpa_id, f.release_date, f.duration, " +
+                "m.name AS mpa, m.id AS mpa_id " +
+                "FROM films AS f INNER JOIN mpa AS m " +
+                "ON m.id = f.mpa_id");
         List<Film> films = createListOfFilms(filmRows);
         fillGenres(films);
         return films;
@@ -50,7 +53,11 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> showTopList(int count) {
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT * FROM films " +
+        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.id AS film_id, " +
+                "f.name, f.description, f.rating, f.mpa_id, f.release_date, f.duration, " +
+                "m.name AS mpa, m.id AS mpa_id " +
+                "FROM films AS f INNER JOIN mpa AS m " +
+                "ON m.id = f.mpa_id " +
                 "ORDER BY rating DESC LIMIT ?", count);
         List<Film> films = createListOfFilms(filmRows);
         fillGenres(films);
@@ -90,7 +97,7 @@ public class FilmDbStorage implements FilmStorage {
             film.setId((Integer) keyHolder.getKey());
         }
         updateGenresForFilmId(film.getId(), film.getGenres());
-        return getFilm(film.getId()).get();
+        return  getFilm(film.getId()).get();
     }
 
     @Override
@@ -134,12 +141,16 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Optional<Film> getFilm(int id) {
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT * FROM films WHERE id = ?", id);
+        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT f.id AS film_id, " +
+                "f.name, f.description, f.rating, f.mpa_id, f.release_date, f.duration, " +
+                "m.name AS mpa, m.id AS mpa_id " +
+                "FROM films AS f INNER JOIN mpa AS m " +
+                "ON m.id = f.mpa_id WHERE f.id = ?", id);
         if (!filmRows.next()) {
             log.info("Фильм с идентификатором {} не найден.", id);
             throw new ObjectNotFoundException("Нет такого фильма", HttpStatus.NOT_FOUND);
         } else {
-            log.info("Найден фильм: {}", filmRows.getString("id"));
+            log.info("Найден фильм: {}", filmRows.getString("f.id"));
             Film film = fillFilm(filmRows);
             fillGenres(List.of(film));
             return Optional.of(film);
@@ -148,13 +159,19 @@ public class FilmDbStorage implements FilmStorage {
 
     private Film fillFilm(SqlRowSet filmRows) {
         Film film = new Film();
-        int id = filmRows.getInt("id");
+        int id = filmRows.getInt("FILM_ID");
         film.setId(id);
-        film.setName(filmRows.getString("name"));
-        film.setDescription(filmRows.getString("description"));
-        film.setMpa(mpaStorage.getMpaByFilmId(id));
-        film.setReleaseDate(filmRows.getTimestamp("release_date").toLocalDateTime().toLocalDate());
-        film.setDuration(filmRows.getLong("duration"));
+        film.setName(filmRows.getString("NAME"));
+        film.setDescription(filmRows.getString("DESCRIPTION"));
+        int mpaId = filmRows.getInt("MPA_ID");
+        if (!filmRows.wasNull()) {
+            MPA mpa = new MPA();
+            mpa.setId(mpaId);
+            mpa.setName(filmRows.getString("MPA"));
+            film.setMpa(mpa);
+        }
+        film.setReleaseDate(filmRows.getTimestamp("RELEASE_DATE").toLocalDateTime().toLocalDate());
+        film.setDuration(filmRows.getLong("DURATION"));
         return film;
     }
 

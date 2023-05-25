@@ -14,7 +14,7 @@ birthday timestamp
 
 CREATE TABLE mpa (
 id INTEGER PRIMARY KEY,
-name varchar
+name varchar NOT NULL
 );
 
 CREATE TABLE films (
