@@ -150,7 +150,7 @@ public class FilmDbStorage implements FilmStorage {
             log.info("Фильм с идентификатором {} не найден.", id);
             throw new ObjectNotFoundException("Нет такого фильма", HttpStatus.NOT_FOUND);
         } else {
-            log.info("Найден фильм: {}", filmRows.getString("f.id"));
+            log.info("Найден фильм: {}", filmRows.getString("id"));
             Film film = fillFilm(filmRows);
             fillGenres(List.of(film));
             return Optional.of(film);
