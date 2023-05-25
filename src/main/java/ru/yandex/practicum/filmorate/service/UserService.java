@@ -1,90 +1,83 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.ObjectNotFoundException;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.film.LikeStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.*;
+import java.util.List;
 
-@Service
 @Slf4j
+@Service
 public class UserService {
-    UserStorage inMemoryUserStorage;
 
-    @Autowired
-    public UserService(UserStorage inMemoryUserStorage) {
-        this.inMemoryUserStorage = inMemoryUserStorage;
+    @Qualifier("userDbStorage")
+    UserStorage userStorage;
+    LikeStorage likeStorage;
+
+    public UserService(UserStorage userStorage, LikeStorage likeStorage) {
+        this.userStorage = userStorage;
+        this.likeStorage = likeStorage;
     }
 
     public void addFriend(Integer userId, Integer friendId) {
-        User user = inMemoryUserStorage.getUser(userId);
-        User friend = inMemoryUserStorage.getUser(friendId);
-        Set<Integer> userFriends = user.getFriends();
-        if (userFriends == null) {
-            userFriends = new HashSet<>();
-        }
-        userFriends.add(friendId);
-        Set<Integer> friendFriends = friend.getFriends();
-        if (friendFriends == null) {
-            friendFriends = new HashSet<>();
-        }
-        friendFriends.add(userId);
+        userStorage.getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        userStorage.getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        userStorage.addFriends(userId, friendId);
     }
 
-    public void argueFriends(Integer userId, Integer friendId) {
-        User user = inMemoryUserStorage.getUser(userId);
-        User friend = inMemoryUserStorage.getUser(friendId);
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
+    public void argueFriends(int userId, int friendId) {
+        userStorage.getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        userStorage.getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        userStorage.argueFriends(userId, friendId);
     }
 
     public List<User> showCommonFriends(int userId, int friendId) {
-        User user = inMemoryUserStorage.getUser(userId);
-        User friend = inMemoryUserStorage.getUser(friendId);
-        Set<Integer> userFriends = user.getFriends();
-        Set<Integer> friendFriends = friend.getFriends();
-        if (userFriends == null || friendFriends == null) {
-            return Collections.EMPTY_LIST;
-        }
-        Set<User> commonFriends = new HashSet<>();
-        for (Integer thisUser : userFriends) {
-            if (friendFriends.contains(thisUser)) {
-                commonFriends.add(inMemoryUserStorage.getUser(thisUser));
-            }
-        }
-        return new ArrayList<>(commonFriends);
+        userStorage.getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        userStorage.getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        return userStorage.showCommonFriends(userId, friendId);
     }
 
     public List<User> findAll() {
-        return inMemoryUserStorage.findAll();
+        return userStorage.findAll();
     }
 
     public User getUser(int userId) {
-        return inMemoryUserStorage.getUser(userId);
+        return userStorage.getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
     }
 
     public User create(User user) {
-        return inMemoryUserStorage.create(user);
+        return userStorage.create(user);
     }
 
-
     public User update(User user) {
-        return inMemoryUserStorage.update(user);
+        return userStorage.update(user);
     }
 
     public void delete(User user) {
-        inMemoryUserStorage.delete(user);
+        for (Film film : user.getLikes()) {
+            int userId = user.getId();
+            int filmId = film.getId();
+            int rating = film.getRating();
+            film.setRating(--rating);
+            likeStorage.delete(filmId, userId);
+        }
+        userStorage.delete(user);
     }
 
     public List<User> getFriends(int id) {
-        User user = inMemoryUserStorage.getUser(id);
-        List<User> friends = new ArrayList<>();
-        for (Integer friendId : user.getFriends()) {
-            User friend = inMemoryUserStorage.getUser(friendId);
-            friends.add(friend);
-        }
-        return friends;
+        User user = getUser(id);
+        return userStorage.getFriends(user);
     }
 }

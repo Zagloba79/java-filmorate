@@ -1,13 +1,12 @@
 package ru.yandex.practicum.filmorate.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class ErrorResponse {
-    String error;
-
-    public ErrorResponse(String error) {
-        this.error = error;
-    }
-
-    public String getError() {
-        return error;
-    }
+    private String error;
 }

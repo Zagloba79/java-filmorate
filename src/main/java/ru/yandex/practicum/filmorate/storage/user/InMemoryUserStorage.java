@@ -9,13 +9,10 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
-@Component
+@Component("inMemoryUserStorage")
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Integer, User> users = new HashMap<>();
     private int currentId = 0;
@@ -24,12 +21,12 @@ public class InMemoryUserStorage implements UserStorage {
         return new ArrayList<>(users.values());
     }
 
-    public User getUser(int id) {
+    public Optional<User> getUser(int id) {
         if (!users.containsKey(id)) {
             log.info("Пользователя с id=" + id + " не существует.");
             throw new ObjectNotFoundException("Пользователя с id=" + id + " не существует.");
         }
-        return users.get(id);
+        return Optional.of(users.get(id));
     }
 
     public User create(User user) {
@@ -38,7 +35,8 @@ public class InMemoryUserStorage implements UserStorage {
             throw new ObjectAlreadyExistException("Пользователь  " + user.getId() + " уже есть зарегистрирован.");
         }
         validate(user);
-        user.setId(++currentId);
+        ++currentId;
+        user.setId(currentId);
         users.put(currentId, user);
         log.info("Вы только что зарегистрировали пользователя с именем " + user.getName()
                 + " и электронной почтой " + user.getEmail());
@@ -64,6 +62,60 @@ public class InMemoryUserStorage implements UserStorage {
         }
         users.remove(user.getId());
         log.info("Пользователь  " + user.getId() + " удалён");
+    }
+
+    @Override
+    public void addFriends(int userId, int friendId) {
+        User user = getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        User friend = getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        if (friend.getFriends().containsKey(userId)) {
+            user.getFriends().put(friendId, true);
+            friend.getFriends().remove(userId);
+            friend.getFriends().put(userId, true);
+        } else {
+            user.getFriends().put(friendId, false);
+        }
+    }
+
+    @Override
+    public void argueFriends(int userId, int friendId) {
+        User user = getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        User friend = getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        user.getFriends().put(friendId, true);
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
+    }
+
+    @Override
+    public List<User> showCommonFriends(int userId, int friendId) {
+        ArrayList<User> commonFriends = new ArrayList<>();
+        User user = getUser(userId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + userId + " не существует."));
+        User friend = getUser(friendId).orElseThrow(() ->
+                new ObjectNotFoundException("Пользователя с " + friendId + " не существует."));
+        for (Integer id : user.getFriends().keySet()) {
+            if (friend.getFriends().containsKey(id)) {
+                User theirFriend = getUser(id).orElseThrow(() ->
+                        new ObjectNotFoundException("Пользователя с " + id + " не существует."));
+                commonFriends.add(theirFriend);
+            }
+        }
+        return commonFriends;
+    }
+
+    @Override
+    public List<User> getFriends(User user) {
+        ArrayList<User> friends = new ArrayList<>();
+        for (Integer id : user.getFriends().keySet()) {
+            User friend = getUser(id).orElseThrow(() ->
+                    new ObjectNotFoundException("Пользователя с " + id + " не существует."));
+            friends.add(friend);
+        }
+        return friends;
     }
 
     private void validate(User user) {

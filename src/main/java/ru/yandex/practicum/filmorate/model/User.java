@@ -3,15 +3,17 @@ package ru.yandex.practicum.filmorate.model;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 @Data
 public class User {
-    private int id;
+    private Integer id;
     private String email;
     private String login;
     private String name;
     private LocalDate birthday;
-    private final Set<Integer> friends = new HashSet<>();
+    private final Map<Integer, Boolean> friends = new HashMap<>();
+    private Set<Film> likes;
 }
